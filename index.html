@@ -22,19 +22,17 @@
 <body>
 
   <h2>Teachable Machine Image Model</h2>
-
-  <button type="button" onclick="init()">Start</button>
+  <button onclick="init()">Start</button>
 
   <div id="webcam-container"></div>
   <div id="label-container"></div>
 
-  <script type="text/javascript">
-    // Path to your model folder
-    const URL = "./my_model/";
+  <script>
+    // 📌 model files are in the SAME directory as index.html
+    const URL = "./";
 
     let model, webcam, labelContainer, maxPredictions;
 
-    // Load the image model and setup the webcam
     async function init() {
       const modelURL = URL + "model.json";
       const metadataURL = URL + "metadata.json";
