@@ -2,92 +2,166 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Teachable Machine – File Upload</title>
+  <title>AI Image Analysis Demo</title>
 
+  <!-- TensorFlow -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+
+  <!-- Teachable Machine -->
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f5f7fa;
       text-align: center;
-      margin-top: 30px;
+      padding: 40px;
     }
-    img {
-      max-width: 300px;
-      margin-top: 15px;
-      border: 1px solid #ccc;
+
+    .card {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
     }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
     .status {
-      margin-top: 10px;
-      font-weight: bold;
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 15px;
+    }
+
+    input[type="file"] {
+      margin: 15px 0;
+    }
+
+    button {
+      padding: 10px 22px;
+      font-size: 15px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    img {
+      max-width: 250px;
+      margin-top: 15px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    .result {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .bar {
+      height: 10px;
+      background: #e5e7eb;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+
+    .fill {
+      height: 100%;
+      background: #10b981;
+    }
+
+    .disclaimer {
+      font-size: 12px;
+      color: #777;
+      margin-top: 20px;
     }
   </style>
 </head>
 
 <body>
 
-  <h2>Teachable Machine Image Model</h2>
+  <div class="card">
+    <h2>AI-Based Image Analysis</h2>
+    <p class="status" id="status">Loading model…</p>
 
-  <p class="status" id="status">⏳ Loading model…</p>
+    <input type="file" accept="image/*" id="imageInput" disabled>
+    <br><br>
 
-  <input type="file" accept="image/*" id="imageInput" disabled>
-  <br>
+    <button id="analyzeBtn" disabled>Start Analysis</button>
 
-  <img id="preview">
-  <div id="label-container"></div>
+    <br>
+    <img id="preview">
+
+    <div class="result" id="results"></div>
+
+    <p class="disclaimer">
+      ⚠️ This tool is a research prototype for image-based classification.<br>
+      It does not provide clinical diagnosis.
+    </p>
+  </div>
 
   <script>
     const MODEL_URL = "./";
 
-    let model, maxPredictions;
+    let model, predictionsCache;
     const statusEl = document.getElementById("status");
-    const inputEl = document.getElementById("imageInput");
-    const labelContainer = document.getElementById("label-container");
+    const imageInput = document.getElementById("imageInput");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+    const resultsEl = document.getElementById("results");
+    const previewImg = document.getElementById("preview");
 
-    // AUTO load model on page load
+    // Load model automatically
     window.addEventListener("load", async () => {
       try {
-        console.log("Loading model...");
         model = await tmImage.load(
           MODEL_URL + "model.json",
           MODEL_URL + "metadata.json"
         );
 
-        maxPredictions = model.getTotalClasses();
-        labelContainer.innerHTML = "";
-
-        for (let i = 0; i < maxPredictions; i++) {
-          labelContainer.appendChild(document.createElement("div"));
-        }
-
-        statusEl.innerText = "✅ Model loaded. Upload an image.";
-        inputEl.disabled = false;
-
-        console.log("Model loaded successfully");
-
-      } catch (error) {
-        statusEl.innerText = "❌ Failed to load model. Check console.";
-        console.error("MODEL LOAD ERROR:", error);
+        statusEl.innerText = "Model loaded. Upload an image.";
+        imageInput.disabled = false;
+      } catch (e) {
+        statusEl.innerText = "Failed to load model.";
+        console.error(e);
       }
     });
 
-    inputEl.addEventListener("change", async (event) => {
-      if (!model) return;
+    imageInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      previewImg.src = window.URL.createObjectURL(file);
+      await previewImg.decode();
 
-      const file = event.target.files[0];
-      const img = document.getElementById("preview");
+      predictionsCache = await model.predict(previewImg);
+      analyzeBtn.disabled = false;
+      resultsEl.innerHTML = "";
+    });
 
-      img.src = window.URL.createObjectURL(file);
-      await img.decode();
+    analyzeBtn.addEventListener("click", () => {
+      resultsEl.innerHTML = "<h3>Analysis Result</h3>";
 
-      const prediction = await model.predict(img);
+      predictionsCache.forEach(p => {
+        const percent = (p.probability * 100).toFixed(2);
 
-      for (let i = 0; i < maxPredictions; i++) {
-        labelContainer.childNodes[i].innerHTML =
-          prediction[i].className + ": " +
-          prediction[i].probability.toFixed(2);
-      }
+        resultsEl.innerHTML += `
+          <div style="margin-top:10px;">
+            <strong>${p.className}</strong> – ${percent}%
+            <div class="bar">
+              <div class="fill" style="width:${percent}%"></div>
+            </div>
+          </div>
+        `;
+      });
     });
   </script>
 
