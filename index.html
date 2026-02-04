@@ -19,13 +19,14 @@
     img {
       max-width: 300px;
       margin-top: 15px;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
 
 <body>
 
-  <h2>Teachable Machine Image Model</h2>
+  <h2>Teachable Machine Image Model (File Upload)</h2>
 
   <button onclick="init()">Load Model</button>
   <br><br>
@@ -37,14 +38,14 @@
   <div id="label-container"></div>
 
   <script>
-    // 📌 model files are in ROOT
-    const URL = "./";
+    // ✅ IMPORTANT: renamed to avoid conflict
+    const MODEL_URL = "./";
 
     let model, labelContainer, maxPredictions;
 
     async function init() {
-      const modelURL = URL + "model.json";
-      const metadataURL = URL + "metadata.json";
+      const modelURL = MODEL_URL + "model.json";
+      const metadataURL = MODEL_URL + "metadata.json";
 
       model = await tmImage.load(modelURL, metadataURL);
       maxPredictions = model.getTotalClasses();
@@ -56,7 +57,7 @@
         labelContainer.appendChild(document.createElement("div"));
       }
 
-      alert("Model loaded successfully!");
+      alert("✅ Model loaded successfully");
     }
 
     async function predictImage(event) {
@@ -68,7 +69,8 @@
       const file = event.target.files[0];
       const img = document.getElementById("preview");
 
-      img.src = URL.createObjectURL(file);
+      // ✅ use browser URL explicitly
+      img.src = window.URL.createObjectURL(file);
       await img.decode();
 
       const prediction = await model.predict(img);
